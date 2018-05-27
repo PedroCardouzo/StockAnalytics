@@ -6,7 +6,9 @@ public class QUERYKEYWORDS {
     public final static  String API_URL_BASE = "www.alphavantage.co/query?";
     public final static  String FUNCTION = "function=";
     public final static  String COMPANY = "symbol=";
+    public final static String COMPANIES = "symbols=";
     public final static  String INTERVAL = "interval=";
+    public final static  String OUTPUTSIZE = "outputsize=";
     public final static  String API_KEY = "apikey=";
     public final static  String AND = "&";
 }
