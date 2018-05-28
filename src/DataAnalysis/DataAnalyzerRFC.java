@@ -1,4 +1,5 @@
 package DataAnalysis;
+import Parser.Temp;
 import org.msgpack.rpc.Client;
 
 public class DataAnalyzerRFC extends DataAnalysis{
@@ -50,22 +51,27 @@ public class DataAnalyzerRFC extends DataAnalysis{
 
 
     @Override
-    public double[][] simpleMovingAverage(int sampleSize, double[][] list) {
+    public double[][] simpleMovingAverage(int sampleSize, Temp[] data, String field) {
+        double[][] list = Temp.extractFieldForEach(data, field);
         return this.analyzer.simpleMovingAverage(sampleSize, list);
     }
 
     @Override
-    public double[][] exponentialMovingAverage(int sampleSize, double[][] list) {
+    public double[][] exponentialMovingAverage(int sampleSize, Temp[] data, String field) {
+        double[][] list = Temp.extractFieldForEach(data, field);
         return this.analyzer.exponentialMovingAverage(sampleSize, list);
     }
 
     @Override
-    public double[][] rsi(int sampleSize, double[][] list) {
+    public double[][] rsi(int sampleSize, Temp[] data, String field) {
+        double[][] list = Temp.extractFieldForEach(data, field);
         return this.analyzer.rsi(sampleSize, list);
     }
 
     @Override
-    public double[][] obv(double[][] close, double[][] volume) {
+    public double[][] obv(Temp[] data) {
+        double[][] close = Temp.extractFieldForEach(data, "close");
+        double[][] volume = Temp.extractFieldForEach(data, "volume");
         return this.analyzer.obv(close, volume);
     }
     
