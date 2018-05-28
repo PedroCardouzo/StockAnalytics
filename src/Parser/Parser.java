@@ -10,6 +10,7 @@ import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class Parser {
     /****************************
@@ -49,7 +50,7 @@ public class Parser {
 
         private String analysis;
 
-        private ArrayList<Pair<String, double[]>> data;
+        private List<Pair<String, double[]>> data;
 
         AnalysedData(){
             this.data = new ArrayList<Pair<String, double[]>>();
@@ -61,7 +62,7 @@ public class Parser {
             for(int i=0; i<keys.length; i++)
                 this.data.add(new Pair<String, double[]>(keys[i], data[i]));
         }
-        public ArrayList<Pair<String, double[]>> getData(){ return new ArrayList<Pair<String, double[]>>(this.data); }
+        public List<Pair<String, double[]>> getData(){ return new ArrayList<Pair<String, double[]>>(this.data); }
 
     }
 
