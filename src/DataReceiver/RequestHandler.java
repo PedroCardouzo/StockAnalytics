@@ -1,4 +1,8 @@
-package com.data.receiver;
+package DataReceiver;
+
+
+import com.google.gson.Gson;
+
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.io.BufferedReader;
@@ -7,15 +11,11 @@ import java.io.InputStreamReader;
 
 public class RequestHandler {
 
-    public RequestHandler(){
-        System.out.println("Create a new Request Handler Object");
-    }
+    public RequestHandler() {}
 
-    public String a (String b) {
-        return b;
-    }
+    public QueryResult execute(DataReceiver.RequestQuery query) throws Exception {
 
-    public String execute(RequestQuery query) throws Exception {
+            System.out.println("Requesting URL: "+ query.toAlphaVantageURL());
 
             String urlToRead = query.toAlphaVantageURL();
             StringBuilder result = new StringBuilder();
@@ -28,12 +28,19 @@ public class RequestHandler {
                 result.append(line);
             }
             rd.close();
-            return result.toString();
+
+
+            return new QueryResult(result.toString(), query);
         }
 }
 
 /*
     TODO:
-        Tirar o try catch do usuário;
         Adicionar o outputSize como opçao (talvez criar um construtor para cada coisa);
+        implementar o batch stock quotes (multiplas empresas);
+        converter para o formato esperado pelo Haskell;
+        lidar melhor com o user input (se várias queries são necessárias por exemplo
+                                       ou se o OutputSize precisa ser full);
+
+
 */

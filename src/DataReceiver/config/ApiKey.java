@@ -1,4 +1,4 @@
-package com.data.receiver.config;
+package DataReceiver.config;
 
 public class ApiKey {
 

@@ -2,13 +2,12 @@ package Parser;
 
 import DataAnalysis.DataAnalysis;
 import DataAnalysis.DataAnalyzerRFC;
+import DataReceiver.RequestQuery;
+import DataReceiver.StockData;
 import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
-import sun.awt.SunHints;
 
-import java.lang.reflect.Array;
 import java.net.UnknownHostException;
-import java.security.KeyException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -29,13 +28,13 @@ public class Parser {
      * remove <stock_key> from <group_name>
      * show <graph_name>
      ****************************/
-    HashMap<String, Temp> stocks;
+    HashMap<String, DataReceiver.StockData> stocks;
     HashMap<String, AnalysedData> graphs;
     HashMap<String, String> groups;
     DataAnalysis analyser;
     private static final String STOCK_SEQUENCE_REGEX = "([A-Za-z0-9]+ \\| )*[A-Za-z0-9]+";
     public Parser() throws UnknownHostException{
-        this.stocks = new HashMap<String, Temp>();
+        this.stocks = new HashMap<String, StockData>();
         this.graphs = new HashMap<String, AnalysedData>();
         this.groups = new HashMap<String, String>();
         this.analyser = new DataAnalyzerRFC("localhost", 1234);
@@ -117,7 +116,7 @@ public class Parser {
     // it then decides which function from the analyser interface should be called
     // it processes the data and then pushed to graph the result.
     private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) throws ValueException{
-        Temp[] data = new Temp[stock_keys.length];
+        StockData[] data = new StockData[stock_keys.length];
         int i=0;
         for(String key : stock_keys){
             data[i] = this.stocks.get(key);
@@ -159,7 +158,7 @@ public class Parser {
     }
 
     private void pullStock(String command) throws ValueException {
-        Temp stock;
+        StockData stock;
 
         command = command.substring(5); // removes "pull "
         String[] aux = command.split(" as ");
@@ -181,16 +180,16 @@ public class Parser {
         this.stocks.put(name, stock);
     }
 
-    private Temp makeRequest(String stockname, String function){
-        return this.makeRequest(stockname, function, "");
+    private StockData makeRequest(String stockname, String timeSeries){
+        return this.makeRequest(stockname, timeSeries, "");
     }
 
-    private Temp makeRequest(String stockname, String function, String interval){
+    private StockData makeRequest(String stockname, String timeSeries, String interval){
         System.out.println("Make Request ::");
         System.out.println(stockname);
-        System.out.println(function);
+        System.out.println(timeSeries);
         System.out.println(interval);
-        return new Temp();
+        return new StockData(stockname, timeSeries, interval);
     }
 }
 

@@ -1,5 +1,5 @@
 package DataAnalysis;
-import Parser.Temp;
+import DataReceiver.StockData;
 import org.msgpack.rpc.Client;
 
 public class DataAnalyzerRFC extends DataAnalysis{
@@ -51,27 +51,27 @@ public class DataAnalyzerRFC extends DataAnalysis{
 
 
     @Override
-    public double[][] simpleMovingAverage(int sampleSize, Temp[] data, String field) {
-        double[][] list = Temp.extractFieldForEach(data, field);
+    public double[][] simpleMovingAverage(int sampleSize, StockData[] data, String field) {
+        double[][] list = StockData.extractFieldForEach(data, field);
         return this.analyzer.simpleMovingAverage(sampleSize, list);
     }
 
     @Override
-    public double[][] exponentialMovingAverage(int sampleSize, Temp[] data, String field) {
-        double[][] list = Temp.extractFieldForEach(data, field);
+    public double[][] exponentialMovingAverage(int sampleSize, StockData[] data, String field) {
+        double[][] list = StockData.extractFieldForEach(data, field);
         return this.analyzer.exponentialMovingAverage(sampleSize, list);
     }
 
     @Override
-    public double[][] rsi(int sampleSize, Temp[] data, String field) {
-        double[][] list = Temp.extractFieldForEach(data, field);
+    public double[][] rsi(int sampleSize, StockData[] data, String field) {
+        double[][] list = StockData.extractFieldForEach(data, field);
         return this.analyzer.rsi(sampleSize, list);
     }
 
     @Override
-    public double[][] obv(Temp[] data) {
-        double[][] close = Temp.extractFieldForEach(data, "close");
-        double[][] volume = Temp.extractFieldForEach(data, "volume");
+    public double[][] obv(StockData[] data) {
+        double[][] close = StockData.extractFieldForEach(data, "close");
+        double[][] volume = StockData.extractFieldForEach(data, "volume");
         return this.analyzer.obv(close, volume);
     }
     
