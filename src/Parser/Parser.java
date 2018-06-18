@@ -41,6 +41,15 @@ public class Parser {
         this.analyser = new DataAnalyzerRFC("localhost", 1234);
     }
 
+    public static void printl(double[][] list){
+        for(int i=0; i<list.length; i++){
+            for (int j = 0; j < list[i].length; j++) {
+                System.out.print(list[i][j] + " ");
+            }
+            System.out.println("");
+        }
+    }
+
     public static void main(String[] args) throws java.lang.Exception {
         Parser parser = new Parser();
         parser.parse("pull MSFT intraday 20 as msft");
