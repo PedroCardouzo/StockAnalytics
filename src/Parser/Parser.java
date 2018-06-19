@@ -1,6 +1,7 @@
 package Parser;
 
 import DataAnalysis.DataAnalysis;
+import DataAnalysis.DataAnalyzerLocal;
 import DataAnalysis.DataAnalyzerRFC;
 import DataReceiver.RequestQuery;
 import DataReceiver.StockData;
@@ -43,6 +44,7 @@ public class Parser {
 
     public static void printl(double[][] list){
         for(int i=0; i<list.length; i++){
+            System.out.println("list["+i+"] ->");
             for (int j = 0; j < list[i].length; j++) {
                 System.out.print(list[i][j] + " ");
             }
@@ -53,6 +55,20 @@ public class Parser {
     public static void main(String[] args) throws java.lang.Exception {
         Parser parser = new Parser();
         parser.parse("pull MSFT intraday 20 as msft");
+        parser.test();
+    }
+
+    private void test() {
+        this.analyser = new DataAnalyzerLocal();
+        int sampleSize = 4;
+        StockData[] data = new StockData[2];
+        String field = "only";
+        double[] data1 = {1.4, 1.3, 1.98, 2.31, 3.4, 1.3, 0.9, 1.23, 3.40, 2.56, 2.00};
+        double[] data2 = {1, 1, 1, 2, 3, 1, 0, 1, 3, 2, 2};
+        data[0] = new StockData(data1, data2);
+        data[1] = new StockData(data1, data2);
+        double[][] out = this.analyser.obv(data);
+        printl(out);
     }
 
     private class AnalysedData{

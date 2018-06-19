@@ -21,6 +21,13 @@ public class StockData extends OCData {
         this.data = new HashMap<String, double[]>();
     }
 
+    public StockData(double[] info, double[] alfo){
+        this.data = new HashMap<String, double[]>();
+        this.data.put("close", info);
+        this.data.put("volume", alfo);
+
+    }
+
     public StockData(String stockname, String timeSeries, String interval){
         // @Filipe please implement this constructor so as we can call something like
         // new StockData("MSFT", "DAILY", "") -> get object directly ("" -> no interval, as it is daily)

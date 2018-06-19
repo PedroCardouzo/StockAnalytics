@@ -44,23 +44,20 @@ public class RequestQuery {
         String url = QUERYKEYWORDS.PROTOCOL+QUERYKEYWORDS.API_URL_BASE+
                 QUERYKEYWORDS.FUNCTION+this.function+QUERYKEYWORDS.AND;
 
-        if (this.function==Functions.BATCH_STOCK_QUOTES) {
+        if (this.function.equals(Functions.BATCH_STOCK_QUOTES)) {
             url += QUERYKEYWORDS.COMPANIES+this.company+QUERYKEYWORDS.AND;
         } else {
             url += QUERYKEYWORDS.COMPANY+this.company+QUERYKEYWORDS.AND;
 
         }
 
-        switch (this.function) {
-            case Functions.TIME_SERIES_INTRADAY: {url += QUERYKEYWORDS.INTERVAL+this.interval+QUERYKEYWORDS.AND;};break;
+        if (this.function.equals(Functions.TIME_SERIES_INTRADAY))
+            url += QUERYKEYWORDS.INTERVAL+this.interval+QUERYKEYWORDS.AND;
+
+        if (outputSize.equals("full") || outputSize.equals("compact")) {
+            url += QUERYKEYWORDS.OUTPUTSIZE+this.outputSize+QUERYKEYWORDS.AND;
         }
 
-        switch (outputSize) {
-            case "full":
-            case "compact": {url += QUERYKEYWORDS.OUTPUTSIZE+this.outputSize+QUERYKEYWORDS.AND;}break;
-        }
-
-        return
-                url + QUERYKEYWORDS.API_KEY+ApiKey.ALPHA_VANTAGE_API_KEY;
+        return url + QUERYKEYWORDS.API_KEY+ApiKey.ALPHA_VANTAGE_API_KEY;
     }
 }

@@ -63,9 +63,9 @@ public class DataAnalyzerRFC extends DataAnalysis{
     }
 
     @Override
-    public double[][] rsi(int sampleSize, StockData[] data, String field) {
+    public double[][] rsi(int period, StockData[] data, String field) {
         double[][] list = StockData.extractFieldForEach(data, field);
-        return this.analyzer.rsi(sampleSize, list);
+        return this.analyzer.rsi(period, list);
     }
 
     @Override
