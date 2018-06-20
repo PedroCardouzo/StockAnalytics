@@ -1,10 +1,10 @@
 package Parser;
 
 import DataAnalysis.DataAnalysis;
-import DataAnalysis.DataAnalyzerLocal;
 import DataAnalysis.DataAnalyzerRFC;
-import DataReceiver.RequestQuery;
+import DataAnalysis.DataAnalyzerLocal;
 import DataReceiver.StockData;
+import DataReceiver.alpha_vantage_defintions.Functions;
 import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
@@ -12,12 +12,14 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 
 public class Parser {
     /****************************
      * Allowed commands:
      * pull <stock_key> <type> [<sampling_size>] as <name>
      * pull <stock_key> intraday <minutes> [<sampling_size>] as <name>
+     *     where <minutes> can be: 1, 5, 15, 30 or 60 only
      * new graph <graph_name>
      * <graph_name> <- <analysis_id> <field>: <args>
      *     where
@@ -34,15 +36,17 @@ public class Parser {
     HashMap<String, AnalysedData> graphs;
     HashMap<String, String> groups;
     DataAnalysis analyser;
+    boolean loop;
     private static final String STOCK_SEQUENCE_REGEX = "([A-Za-z0-9]+ \\| )*[A-Za-z0-9]+";
     public Parser() throws UnknownHostException{
         this.stocks = new HashMap<String, StockData>();
         this.graphs = new HashMap<String, AnalysedData>();
         this.groups = new HashMap<String, String>();
-        this.analyser = new DataAnalyzerRFC("localhost", 1234);
+        this.analyser = new DataAnalyzerLocal(); // DataAnalyzerRFC("localhost", 1234); //
+        this.loop = false;
     }
 
-    public static void printl(double[][] list){
+    public static void printll(double[][] list){
         for(int i=0; i<list.length; i++){
             System.out.println("list["+i+"] ->");
             for (int j = 0; j < list[i].length; j++) {
@@ -54,8 +58,69 @@ public class Parser {
 
     public static void main(String[] args) throws java.lang.Exception {
         Parser parser = new Parser();
-        parser.parse("pull MSFT intraday 20 as msft");
-        parser.test();
+        boolean loop = true;
+        Scanner input = new Scanner(System.in);
+
+        parser.parse("pull MSFT intraday 15 as msft_mon");
+        parser.parse("pull amd intraday 15 as amd_mon");
+        parser.parse("new graph g");
+        parser.parse("g <- sma close: msft_mon | amd_mon");
+        parser.parse("print g");
+        while(loop){
+            loop = parser.parse(input.nextLine());
+        }
+    }
+
+    public boolean parse(String command) {
+        command = command.toLowerCase(); // case insensitive
+        if(command.matches("^pull.*"))
+            this.pullStock(command);
+        else if(command.matches("^group.*"))
+            this.addGroup(command);
+        else if(command.matches("^new graph.*"))
+            this.addGraph(command);
+        else if(command.matches(".* <- .*"))
+            this.runDataAnalysis(command);
+        else if(command.matches("^show"))
+            this.showGraph(command);
+        else if(command.matches("^print.*"))
+            this.printMetaData(command);
+        else if(command.equals("exit"))
+            return false;
+        else
+            System.out.println("Invalid Command. Please check spelling. You may want to use the 'help' function");
+
+        return true;
+    }
+
+    private void printMetaData(String command) {
+        command = command.substring(5);
+        if(command.equals("")) {
+            System.out.println("Pulled stocks:");
+            for(String s : this.stocks.keySet())
+                System.out.println(s);
+        }else{
+            String graphname = command.substring(1); // removes space
+            AnalysedData ad = this.graphs.get(graphname);
+            if(ad != null) {
+                for (Pair<String, double[]> data : ad.data) {
+                    System.out.println(data.getKey());
+                    printl(data.getValue());
+                }
+            }else
+                System.out.println("graph named '" + graphname + "' does not exists");
+
+        }
+    }
+
+    private void printl(double[] list) {
+        if(list.length > 0) {
+            System.out.print("[" + list[0]);
+            for (int i = 1; i < list.length; i++)
+                System.out.print(", " + list[i]);
+            System.out.println("]");
+        }else
+            System.out.println("Empty list");
     }
 
     private void test() {
@@ -68,7 +133,7 @@ public class Parser {
         data[0] = new StockData(data1, data2);
         data[1] = new StockData(data1, data2);
         double[][] out = this.analyser.obv(data);
-        printl(out);
+        printll(out);
     }
 
     private class AnalysedData{
@@ -83,29 +148,16 @@ public class Parser {
         public void setAnalysisName(String analysisName){ this.analysis = analysisName; }
 
         public String getAnalysisName(){ return this.analysis; }
+
         public void addData(String[] keys, double[][] data){
             for(int i=0; i<keys.length; i++)
                 this.data.add(new Pair<String, double[]>(keys[i], data[i]));
         }
+
         public List<Pair<String, double[]>> getData(){ return new ArrayList<Pair<String, double[]>>(this.data); }
 
     }
 
-    public void parse(String command) {
-        command = command.toLowerCase(); // case insensitive
-        if(command.matches("^pull.*"))
-            this.pullStock(command);
-        else if(command.matches("^group.*"))
-            this.addGroup(command);
-        else if(command.matches("^new graph.*"))
-            this.addGraph(command);
-        else if(command.matches(".* <- .*"))
-            this.runDataAnalysis(command);
-        else if(command.matches("^show"))
-            this.showGraph(command);
-        else
-            System.out.println("Invalid Command. Please check spelling. You may want to use the 'help' function");
-    }
 
     private void showGraph(String command) {
         String graphname = command.substring(5);
@@ -134,7 +186,6 @@ public class Parser {
         String[] stock_keys = to_analyse.split(" \\| "); // split at each ' | '
 
         this.analyse(graph, analysis_function, analysis_field, stock_keys);
-
     }
 
     // this function receives the graph where the data will go, the analysis function chosen by the user, the field which
@@ -196,10 +247,12 @@ public class Parser {
         else
             name = aux[1];
 
+        req[1] = this.transformInputIntoFormalParameter(req[1]);
+
         if(req.length == 2)
             stock = this.makeRequest(req[0], req[1]);
         else if(req.length == 3)
-            stock = this.makeRequest(req[0], req[1], req[2]);
+            stock = this.makeRequest(req[0], req[1], req[2]+"min");
         else
             throw new ValueException("Required stock wasn't found or command was ill structured");
 
@@ -209,6 +262,23 @@ public class Parser {
     private StockData makeRequest(String stockname, String timeSeries){
         return this.makeRequest(stockname, timeSeries, "");
     }
+
+    private String transformInputIntoFormalParameter(String input){
+        if(input.equals("intraday"))
+            return Functions.TIME_SERIES_INTRADAY;
+        else if(input.equals("daily"))
+            return Functions.TIME_SERIES_DAILY;
+        else if(input.equals("weekly"))
+            return Functions.TIME_SERIES_WEEKLY;
+        else if(input.equals("monthly"))
+            return Functions.TIME_SERIES_MONTHLY;
+        else
+            System.out.println("Invalid parameter " + input);
+
+        return "Invalid Parameter";
+    }
+
+
 
     private StockData makeRequest(String stockname, String timeSeries, String interval){
         System.out.println("Make Request ::");

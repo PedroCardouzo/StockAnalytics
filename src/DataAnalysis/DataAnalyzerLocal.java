@@ -69,7 +69,7 @@ public class DataAnalyzerLocal extends DataAnalysis {
                 else
                     down += head;
             }
-            output[i][ind] = up/(up-down); // up - down because down was negative
+            output[i][ind] = n > 1 ? up/(up-down) : 0.0; // up - down because down was negative
         }
 
         return output;

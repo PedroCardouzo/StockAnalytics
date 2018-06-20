@@ -50,7 +50,7 @@ public class StockData extends OCData {
 
         try {
             QueryResult result = requestHandler.execute(query);
-            convertToOCFormat(result.getRawData());
+            this.convertToOCFormat(result.getRawData());
         } catch (Exception e){
             e.printStackTrace();
         }
