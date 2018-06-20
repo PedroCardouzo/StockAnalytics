@@ -1,5 +1,7 @@
 package Grapher;
 
+import javafx.util.Pair;
+
 public class GraphFormatData {
 
     public String getStock() {
@@ -22,8 +24,8 @@ public class GraphFormatData {
 
     private double[] data;
 
-    public GraphFormatData (String stock, double[] data) {
-        this.stock = stock; this.data = data;
+    public GraphFormatData (Pair<String, double[]> pair ) {
+        this.stock = pair.getKey(); this.data = pair.getValue();
 
     }
 }

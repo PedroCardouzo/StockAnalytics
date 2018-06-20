@@ -13,7 +13,7 @@ public class Grapher {
         this.title = title; this.function = function;
         this.interval = interval;this.analysisType = analysisType;this.plots = plots;
 
-        Chart c = new Chart (this.title, this.analysisType, this.function, this.plots);
+        Chart c = new Chart (this.title, this.analysisType, this.function, this.interval, this.plots);
         c.setVisible(true);
 
 
