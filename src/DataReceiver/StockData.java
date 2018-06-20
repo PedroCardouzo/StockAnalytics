@@ -16,6 +16,8 @@ import java.util.List;
 
 import DataReceiver.RequestQuery;
 
+import javax.management.Query;
+
 public class StockData extends OCData {
 
     private HashMap<String, double[]> data;
@@ -38,8 +40,8 @@ public class StockData extends OCData {
 
     }
 
-    public StockData(String stockname, String timeSeries, String interval){
-        this.data = new HashMap<String, double[]>();
+    public StockData(String stockname, String timeSeries, String interval) {
+        this.data = new HashMap<>();
         RequestHandler requestHandler = new RequestHandler();
 
         RequestQuery query= new RequestQuery(timeSeries,
@@ -48,11 +50,19 @@ public class StockData extends OCData {
                 "");
         this.query = query;
 
+        QueryResult result;
         try {
-            QueryResult result = requestHandler.execute(query);
-            this.convertToOCFormat(result.getRawData());
+             result = requestHandler.execute(query);
         } catch (Exception e){
             e.printStackTrace();
+            System.out.println("Runtime exception when executing query '" + query + "'");
+            return;
+        }
+
+        try{
+            this.convertToOCFormat(result.getRawData());
+        } catch (IndexOutOfBoundsException e) {
+            throw new InvalidQueryException();
         }
 
    }

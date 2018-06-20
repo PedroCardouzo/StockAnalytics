@@ -3,10 +3,15 @@ package Parser;
 import DataAnalysis.DataAnalysis;
 import DataAnalysis.DataAnalyzerRFC;
 import DataAnalysis.DataAnalyzerLocal;
+import DataReceiver.InvalidQueryException;
 import DataReceiver.StockData;
 import DataReceiver.alpha_vantage_defintions.Functions;
+import DataReceiver.alpha_vantage_defintions.Intervals;
+import Grapher.GraphFormatData;
+import Grapher.Grapher;
 import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
+//import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
 import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
@@ -25,6 +30,7 @@ public class Parser {
      * <graph_name> <- <analysis_id> <field>: <args>
      *     where
      *         <field> is the field (close, open, high, low ..) which we will get the data from
+     *              <field> should be empty if using obv, for example
      *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)
      * group <args> as <group_name>
      *     where
@@ -62,8 +68,8 @@ public class Parser {
         boolean loop = true;
         Scanner input = new Scanner(System.in);
 
-        parser.parse("pull MSFT intraday 15 as msft_mon");
-        parser.parse("pull amd intraday 15 as amd_mon");
+        parser.parse("pull MSFT monthly as msft_mon");
+        parser.parse("pull amd monthly as amd_mon");
         parser.parse("new graph g");
         parser.parse("g <- sma close: msft_mon | amd_mon");
         parser.parse("print g");
@@ -151,7 +157,7 @@ public class Parser {
 
         public String toString(){
             boolean flag = false;
-            String buffer =  "Analysis: " + this.getAnalysis() + '\n' +"Time Series:" + this.getTimeSeries() + '\n';
+            String buffer =  "Analysis: " + this.getAnalysisName() + '\n' +"Time Series:" + this.getTimeSeries() + '\n';
             if(!this.getInterval().equals(""))
                 buffer += "Interval: " + this.getInterval() + '\n';
 
@@ -168,8 +174,6 @@ public class Parser {
 
         public void setAnalysisName(String analysisName){ this.analysis = analysisName; }
 
-        public String getAnalysisName(){ return this.analysis; }
-
         public void addData(List<String> keys, double[][] in_data){
             for(int i=0; i<keys.size(); i++)
                 this.data.add(new Pair<String, double[]>(keys.get(i), in_data[i]));
@@ -185,7 +189,7 @@ public class Parser {
             this.interval = interval;
         }
 
-        public String getAnalysis() {
+        public String getAnalysisName() {
             return analysis.toUpperCase();
         }
 
@@ -202,6 +206,13 @@ public class Parser {
         String graphname = command.substring(5);
         AnalysedData data = this.graphs.get(graphname);
         System.out.println(data.toString());
+        List<GraphFormatData> plots = new ArrayList<>();
+        for(Pair<String, double[]> p : data.getData()){
+            plots.add(new GraphFormatData(p));
+        }
+        System.out.println("graph to be shown");
+        Grapher graph = new Grapher(graphname, data.getTimeSeries(), data.getInterval(), data.getAnalysisName(), plots);
+        System.out.println("graph shown");
     }
 
     // this method receives the command that is supposed to be an data analysis execution and break the command into its
@@ -231,14 +242,16 @@ public class Parser {
     // these functions will be applied to (if any) and builds the data array using the provided stock_keys
     // it then decides which function from the analyser interface should be called
     // it processes the data and then pushed to graph the result.
-    private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) throws ValueException{
+    private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) /*throws ValueException*/{
         StockData[] data = new StockData[stock_keys.length];
         List<String> keys = new ArrayList<String>();
         int i=0;
         for(String key : stock_keys){
             data[i] = this.stocks.get(key);
-            if(data[i] == null)
-                throw new ValueException("Key " + key + "doesn't exists. Please use pull function to obtain data or check for misspelling");
+            if(data[i] == null) {
+                System.out.println("Key " + key + " doesn't exists. Please use pull function to obtain data or check for misspelling"); //throw new ValueException("Key " + key + "doesn't exists. Please use pull function to obtain data or check for misspelling");
+                return;
+            }
             keys.add(data[i].getCompany());
 
             i++;
@@ -254,9 +267,10 @@ public class Parser {
             out = this.analyser.rsi(10, data, analysis_field);
         }else if(analysis_function.equals("obv")) {
             out = this.analyser.obv(data);
-        }else
-            throw new ValueException("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling");
-
+        }else {
+            System.out.println("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling"); // throw new ValueException("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling");
+            return;
+        }
         graph.setAnalysisName(analysis_function);
         graph.addData(keys, out);
         graph.setTimeSeries(data[0].getTimeSeries());
@@ -279,7 +293,7 @@ public class Parser {
         this.groups.put(aux[1], aux[0]);
     }
 
-    private void pullStock(String command) throws ValueException {
+    private void pullStock(String command) /*throws ValueException*/ {
         StockData stock;
 
         command = command.substring(5); // removes "pull "
@@ -292,38 +306,26 @@ public class Parser {
         else
             name = aux[1];
 
-        req[1] = this.transformInputIntoFormalParameter(req[1]);
-
-        if(req.length == 2)
-            stock = this.makeRequest(req[0], req[1]);
-        else if(req.length == 3)
-            stock = this.makeRequest(req[0], req[1], transformInputIntoFormalParameter(req[2]));
-        else
-            throw new ValueException("Required stock wasn't found or command was ill structured");
-
+        req[1] = Functions.transformInputIntoFormalParameter(req[1]);
+        try {
+            if (req.length == 2)
+                stock = this.makeRequest(req[0], req[1]);
+            else if (req.length == 3)
+                stock = this.makeRequest(req[0], req[1], Intervals.transformInputIntoFormalParameter(req[2]));
+            else
+                stock = this.makeRequest(req[0], req[1], req[2]);
+            // throw new ValueException("Required stock wasn't found or command was ill structured");
+        }catch(InvalidQueryException ieq){
+            ieq.printStackTrace();
+            System.out.println("Query was invalid or API took to long to answer. Please try again and re-check query validity");
+            stock = null;
+        }
         this.stocks.put(name, stock);
     }
 
     private StockData makeRequest(String stockname, String timeSeries){
         return this.makeRequest(stockname, timeSeries, "");
     }
-
-    private String transformInputIntoFormalParameter(String input){
-        if(input.equals("intraday"))
-            return Functions.TIME_SERIES_INTRADAY;
-        else if(input.equals("daily"))
-            return Functions.TIME_SERIES_DAILY;
-        else if(input.equals("weekly"))
-            return Functions.TIME_SERIES_WEEKLY;
-        else if(input.equals("monthly"))
-            return Functions.TIME_SERIES_MONTHLY;
-        else
-            System.out.println("Invalid parameter " + input);
-
-        throw new InvalidParameterException("Invalid Parameter");
-    }
-
-
 
     private StockData makeRequest(String stockname, String timeSeries, String interval){
         System.out.println("Make Request ::");
