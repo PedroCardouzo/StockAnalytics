@@ -9,6 +9,7 @@ import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
 import java.net.UnknownHostException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +72,7 @@ public class Parser {
         }
     }
 
-    public boolean parse(String command) {
+    private boolean parse(String command) {
         command = command.toLowerCase(); // case insensitive
         if(command.matches("^pull.*"))
             this.pullStock(command);
@@ -81,7 +82,7 @@ public class Parser {
             this.addGraph(command);
         else if(command.matches(".* <- .*"))
             this.runDataAnalysis(command);
-        else if(command.matches("^show"))
+        else if(command.matches("^show .*"))
             this.showGraph(command);
         else if(command.matches("^print.*"))
             this.printMetaData(command);
@@ -137,27 +138,65 @@ public class Parser {
     }
 
     private class AnalysedData{
+        // this class is made generic as a processed data could be integer too, live for obv function
 
         private String analysis;
-
+        String timeSeries;
+        String interval;
         private List<Pair<String, double[]>> data;
 
         AnalysedData(){
             this.data = new ArrayList<Pair<String, double[]>>();
         }
+
+        public String toString(){
+            boolean flag = false;
+            String buffer =  "Analysis: " + this.getAnalysis() + '\n' +"Time Series:" + this.getTimeSeries() + '\n';
+            if(!this.getInterval().equals(""))
+                buffer += "Interval: " + this.getInterval() + '\n';
+
+            if(data.size() > 0) {
+                flag = true;
+                buffer += "Contains analyzed data from stocks: ";
+                for (Pair<String, double[]> p : data)
+                    buffer += p.getKey() + ", ";
+            }
+
+            return flag ? buffer.substring(0,buffer.length()-2) : buffer;
+
+        }
+
         public void setAnalysisName(String analysisName){ this.analysis = analysisName; }
 
         public String getAnalysisName(){ return this.analysis; }
 
-        public void addData(String[] keys, double[][] data){
-            for(int i=0; i<keys.length; i++)
-                this.data.add(new Pair<String, double[]>(keys[i], data[i]));
+        public void addData(List<String> keys, double[][] in_data){
+            for(int i=0; i<keys.size(); i++)
+                this.data.add(new Pair<String, double[]>(keys.get(i), in_data[i]));
         }
 
-        public List<Pair<String, double[]>> getData(){ return new ArrayList<Pair<String, double[]>>(this.data); }
+        public List<Pair<String, double[]>> getData(){ return new ArrayList<Pair<String,double[]>>(this.data); }
 
+        public void setTimeSeries(String timeSeries) {
+            this.timeSeries = timeSeries;
+        }
+
+        public void setInterval(String interval) {
+            this.interval = interval;
+        }
+
+        public String getAnalysis() {
+            return analysis.toUpperCase();
+        }
+
+        public String getInterval() {
+            return interval.toLowerCase();
+        }
+
+        public String getTimeSeries() {
+            return timeSeries.toUpperCase();
+        }
     }
-
 
     private void showGraph(String command) {
         String graphname = command.substring(5);
@@ -194,28 +233,34 @@ public class Parser {
     // it processes the data and then pushed to graph the result.
     private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) throws ValueException{
         StockData[] data = new StockData[stock_keys.length];
+        List<String> keys = new ArrayList<String>();
         int i=0;
         for(String key : stock_keys){
             data[i] = this.stocks.get(key);
             if(data[i] == null)
                 throw new ValueException("Key " + key + "doesn't exists. Please use pull function to obtain data or check for misspelling");
+            keys.add(data[i].getCompany());
+
             i++;
         }
 
+
         double[][] out;
-        if(analysis_function.equals("sma"))
+        if(analysis_function.equals("sma")) {
             out = this.analyser.simpleMovingAverage(10, data, analysis_field);
-        else if(analysis_function.equals("ema"))
+        }else if(analysis_function.equals("ema")) {
             out = this.analyser.exponentialMovingAverage(10, data, analysis_field);
-        else if(analysis_function.equals("rsi"))
+        }else if(analysis_function.equals("rsi")) {
             out = this.analyser.rsi(10, data, analysis_field);
-        else if(analysis_function.equals("obv"))
+        }else if(analysis_function.equals("obv")) {
             out = this.analyser.obv(data);
-        else
+        }else
             throw new ValueException("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling");
 
         graph.setAnalysisName(analysis_function);
-        graph.addData(stock_keys, out);
+        graph.addData(keys, out);
+        graph.setTimeSeries(data[0].getTimeSeries());
+        graph.setInterval(data[0].getInterval());
 
     }
 
@@ -252,7 +297,7 @@ public class Parser {
         if(req.length == 2)
             stock = this.makeRequest(req[0], req[1]);
         else if(req.length == 3)
-            stock = this.makeRequest(req[0], req[1], req[2]+"min");
+            stock = this.makeRequest(req[0], req[1], transformInputIntoFormalParameter(req[2]));
         else
             throw new ValueException("Required stock wasn't found or command was ill structured");
 
@@ -275,7 +320,7 @@ public class Parser {
         else
             System.out.println("Invalid parameter " + input);
 
-        return "Invalid Parameter";
+        throw new InvalidParameterException("Invalid Parameter");
     }
 
 

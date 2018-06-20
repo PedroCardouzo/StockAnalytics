@@ -57,6 +57,7 @@ public class StockData extends OCData {
 
    }
 
+
     public double[] extractField(String field){
         return this.data.get(field);
     }
@@ -131,5 +132,17 @@ public class StockData extends OCData {
             i++;
         }
         this.data.put(field, unwrappedData);
+    }
+
+    public String getTimeSeries() {
+        return this.query.getTimeSeries();
+    }
+
+    public String getInterval() {
+        return this.query.getInterval();
+    }
+
+    public String getCompany() {
+        return this.query.getCompany().toUpperCase();
     }
 }

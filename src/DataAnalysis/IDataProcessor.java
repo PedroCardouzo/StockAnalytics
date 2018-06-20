@@ -2,7 +2,7 @@ package DataAnalysis;
 
 import DataReceiver.StockData;
 
-// interface of a DataProcessor. Every Data processor will
+// interface of a DataProcessor. Every Data processor will have to implement their own
 public interface IDataProcessor {
     double[][] simpleMovingAverage(int sampleSize, StockData[] data, String field);
     double[][] exponentialMovingAverage(int sampleSize, StockData[] data, String field);

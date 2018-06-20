@@ -60,4 +60,12 @@ public class RequestQuery {
 
         return url + QUERYKEYWORDS.API_KEY+ApiKey.ALPHA_VANTAGE_API_KEY;
     }
+
+    public String getTimeSeries() {
+        return this.function;
+    }
+
+    public String getCompany() {
+        return company;
+    }
 }
