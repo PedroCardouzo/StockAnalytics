@@ -10,8 +10,13 @@ import java.lang.reflect.Array;
 
 public class QueryResult {
 
+    private String rawData;
+
     private OCData data;
 
+    public String getRawData() {
+        return rawData;
+    }
     public OCData getData() {
         return data;
     }
@@ -32,8 +37,13 @@ public class QueryResult {
         }
 
         data.convertToOCFormat(rawData);
-
-
     }
+
+    public QueryResult (String rawData) {
+
+        this.rawData = rawData;
+    }
+
+
 
 }

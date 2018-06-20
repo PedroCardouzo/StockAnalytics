@@ -30,17 +30,6 @@ public class RequestHandler {
             rd.close();
 
 
-            return new QueryResult(result.toString(), query);
+            return new QueryResult(result.toString());
         }
 }
-
-/*
-    TODO:
-        Adicionar o outputSize como opçao (talvez criar um construtor para cada coisa);
-        implementar o batch stock quotes (multiplas empresas);
-        converter para o formato esperado pelo Haskell;
-        lidar melhor com o user input (se várias queries são necessárias por exemplo
-                                       ou se o OutputSize precisa ser full);
-
-
-*/

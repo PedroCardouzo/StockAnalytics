@@ -1,6 +1,8 @@
 package DataReceiver;
 
+import DataReceiver.alpha_vantage_defintions.Companies;
 import DataReceiver.alpha_vantage_defintions.Functions;
+import DataReceiver.alpha_vantage_defintions.Intervals;
 import DataReceiver.alpha_vantage_defintions.JSONKEYS;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,9 +14,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import DataReceiver.RequestQuery;
+
 public class StockData extends OCData {
 
     private HashMap<String, double[]> data;
+    private RequestQuery query;
+
+
+    public RequestQuery getQuery() {
+        return this.query;
+    }
 
     public StockData(DataReceiver.RequestQuery requestQuery){
         super (requestQuery);
@@ -29,13 +39,23 @@ public class StockData extends OCData {
     }
 
     public StockData(String stockname, String timeSeries, String interval){
-        // @Filipe please implement this constructor so as we can call something like
-        // new StockData("MSFT", "DAILY", "") -> get object directly ("" -> no interval, as it is daily)
-        // new StockData("MSFT", "MONTHLY", "") -> get object directly ("" -> no interval, as it is monthly)
-        // new StockData("MSFT", "INTRADAY", "15") -> get object directly ("15" -> 15 minutes interval)
-        // so we should build the query from here and then call this.convertToOCFormat (which can probably be private then)
-        // take a look at convertToOCFormat too
-    }
+        this.data = new HashMap<String, double[]>();
+        RequestHandler requestHandler = new RequestHandler();
+
+        RequestQuery query= new RequestQuery(timeSeries,
+                stockname,
+                interval,
+                "");
+        this.query = query;
+
+        try {
+            QueryResult result = requestHandler.execute(query);
+            convertToOCFormat(result.getRawData());
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+   }
 
     public double[] extractField(String field){
         return this.data.get(field);
@@ -87,7 +107,7 @@ public class StockData extends OCData {
             low.add(jsonObject.getAsJsonObject(key).get(JSONKEYS.LOW).getAsDouble());
             close.add(jsonObject.getAsJsonObject(key).get(JSONKEYS.CLOSE).getAsDouble());
 
-            if (Functions.isAdjusted(this.getQuery().getFunction())) {
+            if (Functions.isAdjusted(this.query.getFunction())){
                 volume.add(jsonObject.getAsJsonObject(key).get(JSONKEYS.ADJUSTED_VOLUME).getAsDouble());
                 adjustedClose.add(jsonObject.getAsJsonObject(key).get(JSONKEYS.ADJUSTED_CLOSE).getAsDouble());
                 dividendAmount.add(jsonObject.getAsJsonObject(key).get(JSONKEYS.DIVIDEND_AMOUNT).getAsDouble());
@@ -111,11 +131,5 @@ public class StockData extends OCData {
             i++;
         }
         this.data.put(field, unwrappedData);
-    }
-
-    @Override
-    public String toString () {
-        Gson gson = new Gson();
-        return gson.toJson(this, StockData.class);
     }
 }
