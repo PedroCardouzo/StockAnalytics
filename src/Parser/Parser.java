@@ -6,7 +6,7 @@ import DataAnalysis.DataAnalyzerRFC;
 import DataReceiver.RequestQuery;
 import DataReceiver.StockData;
 import javafx.util.Pair;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
+//import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -141,13 +141,13 @@ public class Parser {
     // these functions will be applied to (if any) and builds the data array using the provided stock_keys
     // it then decides which function from the analyser interface should be called
     // it processes the data and then pushed to graph the result.
-    private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) throws ValueException{
+    private void analyse(AnalysedData graph, String analysis_function, String analysis_field, String[] stock_keys) /*throws ValueException*/{
         StockData[] data = new StockData[stock_keys.length];
         int i=0;
         for(String key : stock_keys){
             data[i] = this.stocks.get(key);
             if(data[i] == null)
-                throw new ValueException("Key " + key + "doesn't exists. Please use pull function to obtain data or check for misspelling");
+                //throw new ValueException("Key " + key + "doesn't exists. Please use pull function to obtain data or check for misspelling");
             i++;
         }
 
@@ -161,7 +161,8 @@ public class Parser {
         else if(analysis_function.equals("obv"))
             out = this.analyser.obv(data);
         else
-            throw new ValueException("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling");
+            out = this.analyser.obv(data);
+            //throw new ValueException("Chosen function '" + analysis_function + "' doesn't exists. Please check spelling");
 
         graph.setAnalysisName(analysis_function);
         graph.addData(stock_keys, out);
@@ -183,7 +184,7 @@ public class Parser {
         this.groups.put(aux[1], aux[0]);
     }
 
-    private void pullStock(String command) throws ValueException {
+    private void pullStock(String command) /*throws ValueException*/ {
         StockData stock;
 
         command = command.substring(5); // removes "pull "
@@ -201,7 +202,8 @@ public class Parser {
         else if(req.length == 3)
             stock = this.makeRequest(req[0], req[1], req[2]);
         else
-            throw new ValueException("Required stock wasn't found or command was ill structured");
+            stock = this.makeRequest(req[0], req[1], req[2]);
+           // throw new ValueException("Required stock wasn't found or command was ill structured");
 
         this.stocks.put(name, stock);
     }
