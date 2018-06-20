@@ -13,6 +13,7 @@ import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 //import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
+import javax.swing.tree.TreeNode;
 import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -68,14 +69,30 @@ public class Parser {
         boolean loop = true;
         Scanner input = new Scanner(System.in);
 
-        parser.parse("pull MSFT monthly as msft_mon");
+        /*
         parser.parse("pull amd monthly as amd_mon");
         parser.parse("new graph g");
         parser.parse("g <- sma close: msft_mon | amd_mon");
         parser.parse("print g");
         while(loop){
             loop = parser.parse(input.nextLine());
+        }*/
+
+    }
+
+    private void demo(){
+        this.parse("pull MSFT monthly as msft_mon");
+        DataReceiver.StockData sd = this.stocks.get("msft_mon");
+        Tree.Node root = null;
+        for(Double d : sd.extractField("open")){
+            if(root == null)
+                root = new Tree.Node<Double, String>(d, sd.getCompany());
+            else
+                root.insert(new Tree.Node(d, sd.getCompany()));
         }
+        List<Pair<Double, String>> lp = root.getAllData();
+        System.out.println(lp.toString());
+        System.out.println(root.find(86.125).toString());
     }
 
     private boolean parse(String command) {
