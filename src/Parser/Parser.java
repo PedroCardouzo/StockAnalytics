@@ -11,7 +11,6 @@ import Grapher.GraphFormatData;
 import Grapher.Grapher;
 import javafx.util.Pair;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
-//import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
 import javax.swing.tree.TreeNode;
 import java.net.UnknownHostException;
@@ -19,39 +18,63 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Scanner;
 
 public class Parser {
-    /****************************
-     * Allowed commands:
-     * pull <stock_key> <type> [<sampling_size>] as <name>
-     * pull <stock_key> intraday <minutes> [<sampling_size>] as <name>
-     *     where <minutes> can be: 1, 5, 15, 30 or 60 only
-     * new graph <graph_name>
-     * <graph_name> <- <analysis_id> <field>: <args>
-     *     where
-     *         <field> is the field (close, open, high, low ..) which we will get the data from
-     *              <field> should be empty if using obv, for example
-     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)
-     * group <args> as <group_name>
-     *     where
-     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)
-     * push <stock_key> to <group_name>
-     * remove <stock_key> from <group_name>
-     * show <graph_name>
-     ****************************/
+    /*************************************************************************************************************
+     * Allowed commands:                                                                                         *
+     * pull <stock_key> <type> [<sampling_size>] as <name>                                                       *
+     * pull <stock_key> intraday <minutes> [<sampling_size>] as <name>                                           *
+     *     where <minutes> can be: 1, 5, 15, 30 or 60 only                                                       *
+     * new graph <graph_name>                                                                                    *
+     * <graph_name> <- <analysis_id> <field>: <args>                                                             *
+     *     where                                                                                                 *
+     *         <field> is the field (close, open, high, low ..) which we will get the data from                  *
+     * <graph_name> <- obv: <args>                                                                               *
+     *     obv selects fields by default                                                                         *
+     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)  *
+     * group <args> as <group_name>                                                                              *
+     *     where                                                                                                 *
+     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)  *
+     * push <stock_key> to <group_name>                                                                          *
+     * remove <stock_key> from <group_name>                                                                      *
+     * show <graph_name>                                                                                         *
+     *************************************************************************************************************/
     HashMap<String, DataReceiver.StockData> stocks;
     HashMap<String, AnalysedData> graphs;
     HashMap<String, String> groups;
     DataAnalysis analyser;
     boolean loop;
     private static final String STOCK_SEQUENCE_REGEX = "([A-Za-z0-9]+ \\| )*[A-Za-z0-9]+";
-    public Parser() throws UnknownHostException{
+    public Parser(DataAnalysis analyser) throws UnknownHostException{
         this.stocks = new HashMap<String, StockData>();
         this.graphs = new HashMap<String, AnalysedData>();
         this.groups = new HashMap<String, String>();
-        this.analyser = new DataAnalyzerLocal(); // DataAnalyzerRFC("localhost", 1234); //
+        this.analyser = analyser;
         this.loop = false;
+    }
+
+    public boolean parse(String command) {
+        command = command.toLowerCase(); // case insensitive
+        if(command.matches("^pull.*"))
+            this.pullStock(command);
+        else if(command.matches("^group.*"))
+            this.addGroup(command);
+        else if(command.matches("^new graph.*"))
+            this.addGraph(command);
+        else if(command.matches(".* <- .*"))
+            this.runDataAnalysis(command);
+        else if(command.matches("^show .*"))
+            this.showGraph(command);
+        else if(command.matches("^print.*"))
+            this.printMetaData(command);
+        else if(command.equals("help"))
+            this.printHelp();
+        else if(command.equals("exit"))
+            return false;
+        else
+            System.out.println("Invalid Command. Please check spelling. You may want to use the 'help' function");
+
+        return true;
     }
 
     public static void printll(double[][] list){
@@ -62,22 +85,6 @@ public class Parser {
             }
             System.out.println("");
         }
-    }
-
-    public static void main(String[] args) throws java.lang.Exception {
-        Parser parser = new Parser();
-        boolean loop = true;
-        Scanner input = new Scanner(System.in);
-
-        /*
-        parser.parse("pull amd monthly as amd_mon");
-        parser.parse("new graph g");
-        parser.parse("g <- sma close: msft_mon | amd_mon");
-        parser.parse("print g");
-        while(loop){
-            loop = parser.parse(input.nextLine());
-        }*/
-
     }
 
     private void demo(){
@@ -95,26 +102,27 @@ public class Parser {
         System.out.println(root.find(86.125).toString());
     }
 
-    private boolean parse(String command) {
-        command = command.toLowerCase(); // case insensitive
-        if(command.matches("^pull.*"))
-            this.pullStock(command);
-        else if(command.matches("^group.*"))
-            this.addGroup(command);
-        else if(command.matches("^new graph.*"))
-            this.addGraph(command);
-        else if(command.matches(".* <- .*"))
-            this.runDataAnalysis(command);
-        else if(command.matches("^show .*"))
-            this.showGraph(command);
-        else if(command.matches("^print.*"))
-            this.printMetaData(command);
-        else if(command.equals("exit"))
-            return false;
-        else
-            System.out.println("Invalid Command. Please check spelling. You may want to use the 'help' function");
-
-        return true;
+    private void printHelp() {
+        String a = "    /*************************************************************************************************************\n" +
+                "     * Allowed commands:                                                                                         *\n" +
+                "     * pull <stock_key> <type> [<sampling_size>] as <name>                                                       *\n" +
+                "     * pull <stock_key> intraday <minutes> [<sampling_size>] as <name>                                           *\n" +
+                "     *     where <minutes> can be: 1, 5, 15, 30 or 60 only                                                       *\n" +
+                "     * new graph <graph_name>                                                                                    *\n" +
+                "     * <graph_name> <- <analysis_id> <field>: <args>                                                             *\n" +
+                "     *     where                                                                                                 *\n" +
+                "     *         <field> is the field (close, open, high, low ..) which we will get the data from                  *\n" +
+                "     * <graph_name> <- obv: <args>                                                                               *\n" +
+                "     *     obv selects fields by default                                                                         *\n" +
+                "     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)  *\n" +
+                "     * group <args> as <group_name>                                                                              *\n" +
+                "     *     where                                                                                                 *\n" +
+                "     *         <args> is a sequence os names of stocks that have been pulled (you may use a group here instead)  *\n" +
+                "     * push <stock_key> to <group_name>                                                                          *\n" +
+                "     * remove <stock_key> from <group_name>                                                                      *\n" +
+                "     * show <graph_name>                                                                                         *\n" +
+                "     *************************************************************************************************************/";
+        System.out.println(a);
     }
 
     private void printMetaData(String command) {
